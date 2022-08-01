@@ -1,17 +1,17 @@
 <template>
   <div class="com-page">
-    <Map></Map>
+    <Stock></Stock>
   </div>
 </template>
 <script>
-import Map from '../components/Map.vue'
+import Stock from '../components/Stock.vue'
 export default {
-  name: 'MapPage',
+  name: 'StockPage',
   data() {
     return {}
   },
   components: {
-    Map
+    Stock
   },
   created() {}
 }

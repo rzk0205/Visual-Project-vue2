@@ -1,10 +1,6 @@
 <template>
   <div class="com-container">
-    <div
-      class="com-chart"
-      style="width: 100vw; height: 100vh"
-      ref="rank_ref"
-    ></div>
+    <div class="com-chart" ref="rank_ref"></div>
   </div>
 </template>
 <script>

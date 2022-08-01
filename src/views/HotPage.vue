@@ -1,17 +1,17 @@
 <template>
   <div class="com-page">
-    <Map></Map>
+    <Hot></Hot>
   </div>
 </template>
 <script>
-import Map from '../components/Map.vue'
+import Hot from '../components/Hot.vue'
 export default {
-  name: 'MapPage',
+  name: 'HotPage',
   data() {
     return {}
   },
   components: {
-    Map
+    Hot
   },
   created() {}
 }

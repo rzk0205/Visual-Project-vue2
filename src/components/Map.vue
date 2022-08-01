@@ -1,10 +1,6 @@
 <template>
   <div class="com-container" @dblclick="revertMap">
-    <div
-      class="com-chart"
-      ref="map_ref"
-      style="width: 100vw; height: 100vh"
-    ></div>
+    <div class="com-chart" ref="map_ref"></div>
   </div>
 </template>
 <script>

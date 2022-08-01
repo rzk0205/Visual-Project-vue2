@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="com-page">
     <Rank></Rank>
   </div>
 </template>
