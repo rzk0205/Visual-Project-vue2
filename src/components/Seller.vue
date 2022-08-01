@@ -8,28 +8,37 @@ export default {
   data() {
     return {
       chartInstance: null,
+      // 服务器返还的数据
       allData: null,
+      // 当前显示的页数
       currentPage: 1,
+      // 一共多少页
       totalPage: 0,
+      // 定时器表示
       timerId: null
     }
   },
   mounted() {
     this.initChart()
     this.getData()
+    window.addEventListener('resize', this.screenAdapter)
+    // 在页面加载完成的时候, 主动进行屏幕的适配
+    this.screenAdapter()
   },
   destroyed() {
     clearInterval(this.timerId)
+    // 在组件销毁的时候, 需要将监听器取消掉
+    window.removeEventListener('resize', this.screenAdapter)
   },
   methods: {
     initChart() {
+      // 初始化echartInstance对象
       this.chartInstance = this.$echarts.init(this.$refs.seller_ref, 'chalk')
+      // 对图表初始化配置的控制
       const initOptino = {
         title: {
           text: '▎商家销售统计',
-          textStyle: {
-            fontSize: 60
-          },
+
           left: 20,
           top: 20
         },
@@ -38,7 +47,7 @@ export default {
           left: '3%',
           right: '6%',
           bottom: '3%',
-          containLabel: true
+          containLabel: true // 距离是包含坐标轴上的文字
         },
         xAxis: {
           type: 'value'
@@ -53,7 +62,7 @@ export default {
             z: 0,
             lineStyle: {
               type: 'solid',
-              width: 60,
+
               color: '#2D3443'
             }
           }
@@ -62,7 +71,6 @@ export default {
           {
             type: 'bar',
 
-            barWidth: 60,
             label: {
               show: true,
               position: 'right',
@@ -71,6 +79,8 @@ export default {
               }
             },
             itemStyle: {
+              // 指明颜色渐变的方向
+              // 指明不同百分比之下颜色的值
               barBorderRadius: [0, 30, 30, 0],
               color: new this.$echarts.graphic.LinearGradient(0, 0, 1, 0, [
                 { offset: 0, color: '#5052EE' },
@@ -84,6 +94,7 @@ export default {
         ]
       }
       this.chartInstance.setOption(initOptino)
+      // 对图表对象进行鼠标事件的监听
       this.chartInstance.on('mouseover', () => {
         clearInterval(this.timerId)
       })
@@ -91,18 +102,24 @@ export default {
         this.startInterval()
       })
     },
+    // 获取服务器的数据
     async getData() {
+      // http://127.0.0.1:8888/api/seller
       const { data: res } = await this.$http.get('seller')
       console.log(res)
       this.allData = res
+      // 对数据排序
       this.allData.sort((a, b) => a.value - b.value)
+      // 每5个元素显示一页
       this.totalPage =
         this.allData.length % 5 === 0
           ? this.allData.length / 5
           : this.allData.length / 5 + 1
       this.updateChart()
+      // 启动定时器
       this.startInterval()
     },
+    // 更新图表
     updateChart() {
       const start = (this.currentPage - 1) * 5
       const end = this.currentPage * 5
@@ -133,6 +150,37 @@ export default {
         }
         this.updateChart()
       }, 4000)
+    },
+    // 当浏览器的大小发生变化的时候, 会调用的方法, 来完成屏幕的适配
+    screenAdapter() {
+      // this.$refs.seller_ref.offsetWidth
+      const titleFontSize = (this.$refs.seller_ref.offsetWidth / 100) * 3.6
+      const adapterOption = {
+        title: {
+          textStyle: {
+            fontSize: titleFontSize
+          }
+        },
+
+        tooltip: {
+          axisPointer: {
+            lineStyle: {
+              width: titleFontSize
+            }
+          }
+        },
+        series: [
+          {
+            barWidth: titleFontSize,
+            itemStyle: {
+              barBorderRadius: [0, titleFontSize / 2, titleFontSize / 2, 0]
+            }
+          }
+        ]
+      }
+      this.chartInstance.setOption(adapterOption)
+      // 手动的调用图表对象的resize 才能产生效果
+      this.chartInstance.resize()
     }
   }
 }

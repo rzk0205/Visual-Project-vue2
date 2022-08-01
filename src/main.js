@@ -5,6 +5,7 @@ import store from './store'
 import axios from 'axios'
 // 引入全局样式文件
 import './assets/css/global.css'
+import './assets/font/iconfont.css'
 axios.defaults.baseURL = 'http://127.0.0.1:8888/api/'
 
 Vue.prototype.$http = axios
