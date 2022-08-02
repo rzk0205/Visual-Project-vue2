@@ -5,6 +5,7 @@
 </template>
 <script>
 import axios from 'axios'
+import { mapState } from 'vuex'
 import map from '../../public/static/map/china.json'
 import { getProvinceMapInfo } from '@/utils/map_utils'
 export default {
@@ -15,21 +16,47 @@ export default {
       mapData: {}
     }
   },
+  created() {
+    // 组件创建完成后 进行回调函数的注册
+    this.$socket.registerCallBack('mapData', this.getData)
+  },
+  computed: {
+    ...mapState(['theme'])
+  },
+  watch: {
+    theme() {
+      // 当前图表销毁
+      this.chartInstance.dispose()
+      // 以最新的主题初始化图表对象
+      this.initChart()
+      // 屏幕适配
+      this.screenAdapter()
+      // 更新图表的展示
+      this.updateChart()
+    }
+  },
   mounted() {
     this.initChart()
-    this.getData()
+    this.$socket.send({
+      action: 'getData',
+      socketType: 'mapData',
+      chartName: 'map',
+      value: ''
+    })
+    // 监听window窗口大小发生改变时调用this.screenAdapter
     window.addEventListener('resize', this.screenAdapter)
-    // 在页面加载完成的时候, 主动进行屏幕的适配
     this.screenAdapter()
   },
-  destroyed() {
-    // 在组件销毁的时候, 需要将监听器取消掉
+  deactivated() {
+    // 销毁时再次调用this.screenAdapter
     window.removeEventListener('resize', this.screenAdapter)
+    // 组件销毁的时候 进行回调函数的取消
+    this.$socket.unRegisterCallBack('mapData')
   },
   methods: {
     async initChart() {
       // 初始化echartInstance对象
-      this.chartInstance = this.$echarts.init(this.$refs.map_ref, 'chalk')
+      this.chartInstance = this.$echarts.init(this.$refs.map_ref, this.theme)
       // const res = await axios.get('http://localhost:8080/static/map/china.json')
       // console.log(map)
       this.$echarts.registerMap('china', map)
@@ -82,10 +109,10 @@ export default {
       })
     },
     // 获取服务器的数据
-    async getData() {
-      const { data: res } = await this.$http.get('map')
-      console.log(res)
-      this.allData = res
+    getData(ret) {
+      // const { data: res } = await this.$http.get('map')
+      // console.log(res)
+      this.allData = ret
       this.updateChart()
       // 启动定时器
     },
@@ -151,8 +178,7 @@ export default {
       }
       this.chartInstance.setOption(revertOption)
     }
-  },
-  created() {}
+  }
 }
 </script>
 <style lang="scss" scoped></style>

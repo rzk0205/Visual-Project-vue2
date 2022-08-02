@@ -4,6 +4,7 @@
   </div>
 </template>
 <script>
+import { mapState } from 'vuex'
 export default {
   data() {
     return {
@@ -13,21 +14,48 @@ export default {
       timerId: null
     }
   },
+  created() {
+    // 组件创建完成后 进行回调函数的注册
+    this.$socket.registerCallBack('stockData', this.getData)
+  },
   mounted() {
     this.initChart()
-    this.getData()
+    this.$socket.send({
+      action: 'getData',
+      socketType: 'stockData',
+      chartName: 'stock',
+      value: ''
+    })
+    // 监听window窗口大小发生改变时调用this.screenAdapter
     window.addEventListener('resize', this.screenAdapter)
-    // 在页面加载完成的时候, 主动进行屏幕的适配
     this.screenAdapter()
   },
-  destroyed() {
-    // 在组件销毁的时候, 需要将监听器取消掉
+  deactivated() {
+    clearInterval(this.timerId)
+    // 销毁时再次调用this.screenAdapter
     window.removeEventListener('resize', this.screenAdapter)
+    // 组件销毁的时候 进行回调函数的取消
+    this.$socket.unRegisterCallBack('stockData')
+  },
+  computed: {
+    ...mapState(['theme'])
+  },
+  watch: {
+    theme() {
+      // 当前图表销毁
+      this.chartInstance.dispose()
+      // 以最新的主题初始化图表对象
+      this.initChart()
+      // 屏幕适配
+      this.screenAdapter()
+      // 更新图表的展示
+      this.updateChart()
+    }
   },
   methods: {
     initChart() {
       // 初始化echartInstance对象
-      this.chartInstance = this.$echarts.init(this.$refs.stock_ref, 'chalk')
+      this.chartInstance = this.$echarts.init(this.$refs.stock_ref, this.theme)
       // 对图表初始化配置的控制
       const initOptino = {
         title: {
@@ -46,11 +74,11 @@ export default {
       })
     },
     // 获取服务器的数据
-    async getData() {
+    getData(ret) {
       // http://127.0.0.1:8888/api/seller
-      const { data: res } = await this.$http.get('stock')
-      console.log(res)
-      this.allData = res
+      // const { data: res } = await this.$http.get('stock')
+      // console.log(res)
+      this.allData = ret
       this.updateChart()
       this.startInterval()
     },
@@ -157,8 +185,7 @@ export default {
         this.updateChart()
       }, 2000)
     }
-  },
-  created() {}
+  }
 }
 </script>
 <style lang="scss" scoped></style>

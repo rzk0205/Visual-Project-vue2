@@ -11,6 +11,8 @@
   </div>
 </template>
 <script>
+import { mapState } from 'vuex'
+import { getThemeValue } from '@/utils/theme_utils'
 export default {
   data() {
     return {
@@ -20,18 +22,42 @@ export default {
       titleFontSize: 0
     }
   },
+  created() {
+    // 组件创建完成后 进行回调函数的注册
+    this.$socket.registerCallBack('hotData', this.getData)
+  },
+  watch: {
+    theme() {
+      // 当前图表销毁
+      this.chartInstance.dispose()
+      // 以最新的主题初始化图表对象
+      this.initChart()
+      // 屏幕适配
+      this.screenAdapter()
+      // 更新图表的展示
+      this.updateChart()
+    }
+  },
   mounted() {
     this.initChart()
-    this.getData()
+    this.$socket.send({
+      action: 'getData',
+      socketType: 'hotData',
+      chartName: 'hot',
+      value: ''
+    })
+    // 监听window窗口大小发生改变时调用this.screenAdapter
     window.addEventListener('resize', this.screenAdapter)
-    // 在页面加载完成的时候, 主动进行屏幕的适配
     this.screenAdapter()
   },
-  destroyed() {
-    // 在组件销毁的时候, 需要将监听器取消掉
+  deactivated() {
+    // 销毁时再次调用this.screenAdapter
     window.removeEventListener('resize', this.screenAdapter)
+    // 组件销毁的时候 进行回调函数的取消
+    this.$socket.unRegisterCallBack('hotData')
   },
   computed: {
+    ...mapState(['theme']),
     catName() {
       if (!this.allData) {
         return ''
@@ -40,13 +66,16 @@ export default {
       }
     },
     comStyle() {
-      return { fontSize: this.titleFontSize + 'px' }
+      return {
+        fontSize: this.titleFontSize + 'px',
+        color: getThemeValue(this.theme).titleColor
+      }
     }
   },
   methods: {
     initChart() {
       // 初始化echartInstance对象
-      this.chartInstance = this.$echarts.init(this.$refs.hot_ref, 'chalk')
+      this.chartInstance = this.$echarts.init(this.$refs.hot_ref, this.theme)
       // 对图表初始化配置的控制
       const initOptino = {
         title: {
@@ -97,11 +126,11 @@ export default {
       // 对图表对象进行鼠标事件的监听
     },
     // 获取服务器的数据
-    async getData() {
+    getData(ret) {
       // http://127.0.0.1:8888/api/seller
-      const { data: res } = await this.$http.get('hotproduct')
-      console.log(res)
-      this.allData = res
+      // const { data: res } = await this.$http.get('hotproduct')
+      // console.log(res)
+      this.allData = ret
       this.updateChart()
     },
     // 更新图表
@@ -139,8 +168,8 @@ export default {
           }
         },
         legend: {
-          itemWidth: this.titleFontSize / 2,
-          itemHeight: this.titleFontSize / 2,
+          itemWidth: this.titleFontSize,
+          itemHeight: this.titleFontSize,
           itemGap: this.titleFontSize / 2,
           textStyle: {
             fontSize: this.titleFontSize / 2
@@ -169,8 +198,7 @@ export default {
       }
       this.updateChart()
     }
-  },
-  created() {}
+  }
 }
 </script>
 <style lang="scss" scoped>

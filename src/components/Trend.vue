@@ -21,6 +21,8 @@
   </div>
 </template>
 <script>
+import { mapState } from 'vuex'
+import { getThemeValue } from '@/utils/theme_utils'
 export default {
   data() {
     return {
@@ -31,9 +33,18 @@ export default {
       titleFontSize: 0
     }
   },
+  created() {
+    // 组件创建完成后 进行回调函数的注册
+    this.$socket.registerCallBack('trendData', this.getData)
+  },
   mounted() {
     this.initChart()
-    this.getData()
+    this.$socket.send({
+      action: 'getData',
+      socketType: 'trendData',
+      chartName: 'trend',
+      value: ''
+    })
     // 监听window窗口大小发生改变时调用this.screenAdapter
     window.addEventListener('resize', this.screenAdapter)
     this.screenAdapter()
@@ -41,8 +52,11 @@ export default {
   deactivated() {
     // 销毁时再次调用this.screenAdapter
     window.removeEventListener('resize', this.screenAdapter)
+    // 组件销毁的时候 进行回调函数的取消
+    this.$socket.unRegisterCallBack('trendData')
   },
   computed: {
+    ...mapState(['theme']),
     selectTypes() {
       if (!this.allData) {
         return []
@@ -61,7 +75,8 @@ export default {
     },
     comStyle() {
       return {
-        fontSize: this.titleFontSize + 'px'
+        fontSize: this.titleFontSize + 'px',
+        color: getThemeValue(this.theme).titleColor
       }
     },
     marginStyle() {
@@ -78,7 +93,7 @@ export default {
       this.showChoice = false
     },
     initChart() {
-      this.chartInstance = this.$echarts.init(this.$refs.trend_ref, 'chalk')
+      this.chartInstance = this.$echarts.init(this.$refs.trend_ref, this.theme)
       const initOption = {
         grid: {
           top: '30%',
@@ -105,10 +120,10 @@ export default {
       }
       this.chartInstance.setOption(initOption)
     },
-    async getData() {
-      const { data: res } = await this.$http.get('trend')
-      this.allData = res
-      console.log(res)
+    getData(ret) {
+      // const { data: res } = await this.$http.get('trend')
+      this.allData = ret
+      console.log(ret)
       this.updateChart()
     },
     updateChart() {
@@ -175,7 +190,18 @@ export default {
       this.chartInstance.resize()
     }
   },
-  created() {}
+  watch: {
+    theme() {
+      // 当前图表销毁
+      this.chartInstance.dispose()
+      // 以最新的主题初始化图表对象
+      this.initChart()
+      // 屏幕适配
+      this.screenAdapter()
+      // 更新图表的展示
+      this.updateChart()
+    }
+  }
 }
 </script>
 <style lang="scss" scoped>
